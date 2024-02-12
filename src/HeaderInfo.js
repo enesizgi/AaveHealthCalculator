@@ -31,9 +31,9 @@ const HeaderInfo = () => {
         if(newNetwork != chain || newAaveVersion != aaveVersion){
             setTokenDataChanged(false);
             setOraclePricesChanged(false);
-            
+
             setChain(newNetwork);
-            
+
             setAaveVersion(newAaveVersion)
 
             // Show loading div
@@ -48,10 +48,10 @@ const HeaderInfo = () => {
             const borrowDiv = document.getElementById("b_s_container_borrow_btn");
             // Todo: Disable the search button. Probably have to set its color because it is a div and not a button
             // Set color of the icon iself?
-            searchDiv.disabled = true;  
+            searchDiv.disabled = true;
             supplyDiv.disabled = true;
             borrowDiv.disabled = true;
-            
+
 
             // Aave V3
             if(newAaveVersion == "V3"){
@@ -74,13 +74,13 @@ const HeaderInfo = () => {
                 else if (newNetwork != "Ethereum"){
                     tempNewEndpoint += ('-'+(newNetwork.toLowerCase()));
                 }
-                
+
             }
             setEndpoint(tempNewEndpoint);
         }
     }
 
-    
+
     const iconComponents = {
         Ethereum: <EthereumSymbol />,
         Arbitrum: <ArbitrumSymbol />,
@@ -89,7 +89,7 @@ const HeaderInfo = () => {
         Metis: <MetisSymbol />,
         Avalanche: <AvalancheSymbol />
     };
-      
+
     useEffect(() => {
         if (endpoint !== null) {
             removeAllTokenDivs();
@@ -157,7 +157,7 @@ const HeaderInfo = () => {
         // Hide outer div
         const supplyOuterDiv = document.getElementById("supply_outer_div_" + token.symbol);
         supplyOuterDiv.style.display = "none";
-        
+
         // Reset amount supplied
         const inputDiv = document.getElementById("supply_input_" + token.symbol);
         inputDiv.value = 0;
@@ -165,7 +165,7 @@ const HeaderInfo = () => {
         const borrowOuterDiv = document.getElementById("borrow_outer_div_" + token.symbol);
         if(!borrowOuterDiv || borrowOuterDiv.style.display == "none"){
             removeSlider(token);
-            
+
         }
 
         var remainingSupply = false;
@@ -378,7 +378,7 @@ const HeaderInfo = () => {
                 // Add amount input to div
                 const amountElement = document.createElement("input");
                 amountElement.id = "supply_input_"+token.symbol;
-                
+
                 if(token.supplyAmount !== undefined){
 
                     amountElement.value = token.supplyAmount;
@@ -407,16 +407,16 @@ const HeaderInfo = () => {
                 valueElement.value = 0;
                 outerDiv.appendChild(valueElement);
 
-                // Add remove button 
+                // Add remove button
                 const removeButton = document.createElement("button");
                 removeButton.id = "supply_button_"+token.symbol;
                 removeButton.classList.add('supply_buttons');
                 removeButton.addEventListener("click", function() {setCheckedValueSupply(token);});
                 outerDiv.appendChild(removeButton);
-               
+
                 // Finally add the outer div element to the ul element
                 ulElement.appendChild(outerDiv);
-                
+
             }
         }
     }
@@ -453,11 +453,11 @@ const HeaderInfo = () => {
                 // Add amount input to div
                 const amountElement = document.createElement("input");
                 amountElement.id = "borrow_input_"+token.symbol;
-                
+
                 if(token.borrowAmount !== undefined){
                     amountElement.value = token.borrowAmount;
                 }
-                
+
                 amountElement.addEventListener("input", calculateCurrentHealthValue);
                 amountElement.addEventListener("input", function() {calculateTokenValue(token.symbol, 1);});
                 amountElement.addEventListener("input", function() {displayPrice(token.symbol, 1, token.price.priceInUSD);});
@@ -481,7 +481,7 @@ const HeaderInfo = () => {
                 valueElement.value = 0;
                 outerDiv.appendChild(valueElement);
 
-                 // Add remove button 
+                 // Add remove button
                  const removeButton = document.createElement("button");
                  removeButton.id = "borrow_button_"+token.symbol;
                  removeButton.classList.add('borrow_buttons');
@@ -498,7 +498,7 @@ const HeaderInfo = () => {
     // Query the graph for the tokens that can be supplied/borrowed for a given network
     // Retrieve each token's symbol and price.
     async function queryTokenDataFromTheGraph(){
-    
+
         const { request } = require('graphql-request');
 
         //TODO: Query for decimals for Polygon V2 token prices
@@ -517,17 +517,27 @@ const HeaderInfo = () => {
         `;
         try {
             const data = await request(endpoint, query);
-
+            console.log('data', data);
             for (const index in data.reserves) {
               const token = data.reserves[index];
               const decimalConvert = Math.pow(10, 8);
               token.price.priceInUSD = token.price.priceInEth / decimalConvert;
-              
+
             }
             console.log(data.reserves);
-            setTokenData(data.reserves);
+            let previouslyFound = false;
+            setTokenData(data.reserves.map(i => {
+                if (i?.symbol === 'USDC' && !previouslyFound) {
+                    previouslyFound = true;
+                    return {
+                        ...i,
+                        symbol: 'USDC.e'
+                    }
+                }
+                return i;
+            }));
             setTokenDataChanged(true);
-        } 
+        }
         catch (error) {
             console.error('Error fetching token info:', error);
             displayErrorMessage('Error fetching token info. ' + error);
@@ -553,7 +563,7 @@ const HeaderInfo = () => {
     const missingPolygonSymbols = ['wstETH'];
     const missingOptimismSymbols = ['rETH'];
     const [oraclePrices, setOraclePrices] = useState([]);
-    
+
     async function getMissingPrices() {
         //TODO: SDAI on Ethereum V3 fetching 0.
         if(chain == "Ethereum" && (aaveVersion == "V3" || aaveVersion == "V2")){
@@ -561,7 +571,7 @@ const HeaderInfo = () => {
             const web3 = new Web3(web3ProviderUrl);
             const contractABI = [{"inputs":[{"internalType":"address","name":"pegToBaseAggregatorAddress","type":"address"},{"internalType":"address","name":"assetToPegAggregatorAddress","type":"address"},{"internalType":"uint8","name":"decimals","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"DecimalsAboveLimit","type":"error"},{"inputs":[],"name":"DecimalsNotEqual","type":"error"},{"inputs":[],"name":"ASSET_TO_PEG","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DENOMINATOR","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PEG_TO_BASE","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"latestAnswer","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"}];
             const oracleAddresses = ['0x230E0321Cf38F09e247e50Afc7801EA2351fe56F', '0xb01e6C9af83879B8e06a092f0DD94309c0D497E4', '0x8B6851156023f4f5A66F68BEA80851c3D905Ac93', '0x05225Cd708bCa9253789C1374e4337a019e99D56','0x5f4d15d761528c57a5C30c43c1DAb26Fc5452731'];
-    
+
             // For each oracle, retrieve the latest token price.
             var tempOraclePrices = [];
             for(const index in oracleAddresses){
@@ -570,20 +580,20 @@ const HeaderInfo = () => {
                 try{
                     const result = await contract.methods.latestAnswer().call();
                     tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                } 
-                catch (error){  
+                }
+                catch (error){
                     displayErrorMessage('Error fetching oracle token info. ' + error);
                 }
             }
             setOraclePrices(tempOraclePrices);
         }
         else if(chain == "Arbitrum" && aaveVersion == "V3"){
-            
+
             const web3ProviderUrl = `https://arbitrum-mainnet.infura.io/v3/${process.env.REACT_APP_API_KEY}`;
             const web3 = new Web3(web3ProviderUrl);
             const contractABI = [{"inputs":[{"internalType":"address","name":"pegToBaseAggregatorAddress","type":"address"},{"internalType":"address","name":"assetToPegAggregatorAddress","type":"address"},{"internalType":"uint8","name":"decimals","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"DecimalsAboveLimit","type":"error"},{"inputs":[],"name":"DecimalsNotEqual","type":"error"},{"inputs":[],"name":"ASSET_TO_PEG","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DENOMINATOR","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PEG_TO_BASE","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"latestAnswer","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"}];
             const oracleAddresses = ['0x945fD405773973d286De54E44649cc0d9e264F78','0x04c28D6fE897859153eA753f986cc249Bf064f71'];
-    
+
             // For each oracle, retrieve the latest token price.
             var tempOraclePrices = [];
             for(const index in oracleAddresses){
@@ -592,20 +602,20 @@ const HeaderInfo = () => {
                 try{
                     const result = await contract.methods.latestAnswer().call();
                     tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                } 
-                catch (error){  
+                }
+                catch (error){
                     displayErrorMessage('Error fetching oracle token info. ' + error);
                 }
             }
             setOraclePrices(tempOraclePrices);
         }
         else if(chain == "Optimism"){
-   
+
             const web3ProviderUrl = `https://optimism-mainnet.infura.io/v3/${process.env.REACT_APP_API_KEY}`;
             const web3 = new Web3(web3ProviderUrl);
             const contractABI = [{"inputs":[{"internalType":"address","name":"pegToBaseAggregatorAddress","type":"address"},{"internalType":"address","name":"assetToPegAggregatorAddress","type":"address"},{"internalType":"uint8","name":"decimals","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"DecimalsAboveLimit","type":"error"},{"inputs":[],"name":"DecimalsNotEqual","type":"error"},{"inputs":[],"name":"ASSET_TO_PEG","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DENOMINATOR","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PEG_TO_BASE","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"latestAnswer","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"}];
             const oracleAddresses = ['0x52d5F9f884CA21C27E2100735d793C6771eAB793'];
-    
+
             // For each oracle, retrieve the latest token price.
             var tempOraclePrices = [];
             for(const index in oracleAddresses){
@@ -614,14 +624,14 @@ const HeaderInfo = () => {
                 try{
                     const result = await contract.methods.latestAnswer().call();
                     tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                    
-                } 
+
+                }
                 catch (error){
-                    displayErrorMessage('Error fetching oracle token info. ' + error);  
+                    displayErrorMessage('Error fetching oracle token info. ' + error);
                 }
             }
             setOraclePrices(tempOraclePrices);
-           
+
         }
         else if(chain == "Polygon"){
             //Polygon V3
@@ -630,7 +640,7 @@ const HeaderInfo = () => {
                 const web3 = new Web3(web3ProviderUrl);
                 const contractABI = [{"inputs":[{"internalType":"address","name":"pegToBaseAggregatorAddress","type":"address"},{"internalType":"address","name":"assetToPegAggregatorAddress","type":"address"},{"internalType":"uint8","name":"decimals","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"DecimalsAboveLimit","type":"error"},{"inputs":[],"name":"DecimalsNotEqual","type":"error"},{"inputs":[],"name":"ASSET_TO_PEG","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DENOMINATOR","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PEG_TO_BASE","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"latestAnswer","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"}];
                 const oracleAddresses = ['0xe34949A48cd2E6f5CD41753e449bd2d43993C9AC'];
-        
+
                 // For each oracle, retrieve the latest token price.
                 var tempOraclePrices = [];
                 for(const index in oracleAddresses){
@@ -639,9 +649,9 @@ const HeaderInfo = () => {
                     try{
                         const result = await contract.methods.latestAnswer().call();
                         tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                        
-                    } 
-                    catch (error){  
+
+                    }
+                    catch (error){
                         displayErrorMessage('Error fetching oracle token info. ' + error);
                     }
                 }
@@ -658,23 +668,23 @@ const HeaderInfo = () => {
                 // try{
                 //     const result = await contract.methods.latestAnswer().call();
                 //     tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                    
-                // } 
-                // catch (error){  
+
+                // }
+                // catch (error){
                 //     displayErrorMessage('Error fetching oracle token info. ' + error);
                 // }
             }
-            
-            
+
+
         }
-        
+
         else if(chain == "Avalanche" && (aaveVersion == "V3" || aaveVersion == "V2")){
-            
+
             const web3ProviderUrl = `https://avalanche-mainnet.infura.io/v3/${process.env.REACT_APP_API_KEY}`;
             const web3 = new Web3(web3ProviderUrl);
             const contractABI = [{"inputs":[{"internalType":"address","name":"pegToBaseAggregatorAddress","type":"address"},{"internalType":"address","name":"assetToPegAggregatorAddress","type":"address"},{"internalType":"uint8","name":"decimals","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"DecimalsAboveLimit","type":"error"},{"inputs":[],"name":"DecimalsNotEqual","type":"error"},{"inputs":[],"name":"ASSET_TO_PEG","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DENOMINATOR","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DECIMALS","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PEG_TO_BASE","outputs":[{"internalType":"contract IChainlinkAggregator","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"latestAnswer","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"}];
             const oracleAddresses = ['0xc9245871D69BF4c36c6F2D15E0D68Ffa883FE1A7'];
-    
+
             // For each oracle, retrieve the latest token price.
             var tempOraclePrices = [];
             for(const index in oracleAddresses){
@@ -683,14 +693,14 @@ const HeaderInfo = () => {
                 try{
                     const result = await contract.methods.latestAnswer().call();
                     tempOraclePrices.push((Number(result) / 100000000).toFixed(2));
-                } 
-                catch (error) 
-                {  
+                }
+                catch (error)
+                {
                     displayErrorMessage('Error fetching oracle token info. ' + error);
                 }
             }
             setOraclePrices(tempOraclePrices);
-            
+
         }
         setOraclePricesChanged(true);
     }
@@ -711,7 +721,7 @@ const HeaderInfo = () => {
         }
         else if(chain == "Avalanche" && (aaveVersion == "V3"|| aaveVersion == "V2")){
             for(const index in oraclePrices){
-                
+
                 const foundObject = tokenData.find((item) => item.symbol === missingAvalancheSymbols[index]);
                 foundObject.price.priceInUSD = oraclePrices[index];
             }
@@ -723,7 +733,7 @@ const HeaderInfo = () => {
             }
         }
         else if(chain == "Optimism"){
-            
+
             for(const index in oraclePrices){
                 const foundObject = tokenData.find((item) => item.symbol === missingOptimismSymbols[index]);
                 foundObject.price.priceInUSD = oraclePrices[index];
@@ -737,17 +747,17 @@ const HeaderInfo = () => {
         setTokenData(tokenData);
         setTokenDataChanged(true);
     }
-    
+
     useEffect(() => {
         // When oraclePrices state is updated, set the missing prices
         if (oraclePrices.length > 0 && oraclePricesChanged && tokenDataChanged) {
-      
+
             setMissingPrices();
         }
     }, [oraclePrices, oraclePricesChanged, tokenDataChanged, tokenData]);
 
     useEffect(() => {
-        
+
         if(!missingPricesFilled){
             renderSupplyAndBorrowLists();
             renderSupplySide();
@@ -770,7 +780,7 @@ const HeaderInfo = () => {
 
     useEffect(() => {
         if(queryCalled){
-            updatePositions(); 
+            updatePositions();
             setQueryCalled(false);
 
             // Hide loading div
@@ -785,7 +795,7 @@ const HeaderInfo = () => {
             supplyDiv.disabled = false;
             borrowDiv.disabled = false;
         }
-            
+
     }, [aavePosition, queryCalled]);
 
     // Query the graph for a user's Aave position on the current network
@@ -845,7 +855,7 @@ const HeaderInfo = () => {
             const loadingDiv = document.getElementById("loading");
             loadingDiv.style.display = "none";
             setMissingPricesFilled(true);
-        
+
         });
     }
 
@@ -869,7 +879,7 @@ const HeaderInfo = () => {
                     // Set supply button to true
                     updateSupplySwitchButton(token.reserve.symbol);
                     // Calculate token position value
-                    calculateTokenValue(foundTokenData.symbol, 0);    
+                    calculateTokenValue(foundTokenData.symbol, 0);
                     // Display slider
                     const sliderDiv = document.getElementById("slider_" + token.reserve.symbol);
                     sliderDiv.style.display = "grid";
@@ -878,7 +888,7 @@ const HeaderInfo = () => {
                         displaySupplyLabels();
                         atLeastOneSupply = true;
                     }
-                    
+
                 }
                 // Display borrowed token
                 if(token.currentTotalDebt != 0){
@@ -894,7 +904,7 @@ const HeaderInfo = () => {
                     updateBorrowSwitchButton(token.reserve.symbol);
                     // Calculate token position value
                     calculateTokenValue(foundTokenData.symbol, 1);
-                    // Display slider 
+                    // Display slider
                     const sliderDiv = document.getElementById("slider_" + token.reserve.symbol);
                     sliderDiv.style.display = "grid";
 
@@ -906,7 +916,7 @@ const HeaderInfo = () => {
             }
             // Display slider labels if at least one supply or one borrow
             if(atLeastOneBorrow || atLeastOneSupply){
-                
+
                 const sliderHeader = document.getElementById('values_container_header');
                 const sliderEmptyText = document.getElementById('values_container_empty');
                 sliderHeader.style.display = "grid";
@@ -914,14 +924,14 @@ const HeaderInfo = () => {
             }
             calculateCurrentHealthValue();
             displayTotalSuppliedOrBorrowed();
-            
+
         }
         else{
             // Remove any previous position info
             clearPositionInfo();
             displayErrorMessage(`Error: Address does not own an Aave position on the ${chain} network`);
         }
-        
+
     }
 
     function updateSupplySwitchButton(tokenSymbol){
@@ -935,15 +945,15 @@ const HeaderInfo = () => {
     }
 
     function setSupplyModalVisibilityFalse(){
-        // Disable supply buttons as they are still clickable when modal is not visible 
+        // Disable supply buttons as they are still clickable when modal is not visible
         for(const index in tokenData){
             const token = tokenData[index];
             const supplyInputButton = document.getElementById("supply_input_button_" + token.symbol);
-            if(supplyInputButton){              
+            if(supplyInputButton){
                 supplyInputButton.disabled = true;
             }
         }
-        setSupplyModalVisible(false); 
+        setSupplyModalVisible(false);
     }
     function setSupplyModalVisibilityTrue(){
         // Re-enable supply buttons
@@ -954,37 +964,37 @@ const HeaderInfo = () => {
                 supplyInputButton.disabled = false;
             }
         }
-        setSupplyModalVisible(true);      
+        setSupplyModalVisible(true);
     }
     function setBorrowModalVisibilityTrue(){
         // Re-enable borrow buttons
         for(const index in tokenData){
             const token = tokenData[index];
             const borrowInputButton = document.getElementById("borrow_input_button_" + token.symbol);
-            if(borrowInputButton){ 
+            if(borrowInputButton){
                 borrowInputButton.disabled = false;
             }
         }
         setBorrowModalVisible(true);
     }
     function setBorrowModalVisibilityFalse(){
-        // Disable borrow buttons as they are still clickable when modal is not visible 
+        // Disable borrow buttons as they are still clickable when modal is not visible
         for(const index in tokenData){
             const token = tokenData[index];
             const borrowInputButton = document.getElementById("borrow_input_button_" + token.symbol);
             if(borrowInputButton){
-                
+
                 borrowInputButton.disabled = true;
             }
         }
-        setBorrowModalVisible(false);   
+        setBorrowModalVisible(false);
     }
 
     // When the user clicks on the button, toggle between hiding and showing the dropdown content
     function showDropDown() {
         document.getElementById("myDropdown").classList.toggle("show");
     }
-    
+
     // Close the dropdown menu if the user clicks outside of it
     window.onclick = function(event) {
         if (!event.target.matches('.dropdown_btn')) {
@@ -1001,12 +1011,12 @@ const HeaderInfo = () => {
 
     // // Adds tokens to the supply list modal
     function renderSupplyAndBorrowLists(){
-        
+
         const ulElementSupply = document.getElementById("modal_supply_content_scrollable_list");
         const ulElementBorrow = document.getElementById("modal_borrow_content_scrollable_list");
         ulElementSupply.innerHTML = "";
         ulElementBorrow.innerHTML = "";
-        
+
         for (const key in tokenData) {
             /* -- SUPPLY SIDE -- */
             const item = tokenData[key];
@@ -1042,12 +1052,12 @@ const HeaderInfo = () => {
 
             /* -- BORROW SIDE -- */
             const item1 = tokenData[key];
-                
+
             if(item1.borrowingEnabled){
                 // Create outer div
                 const outerDiv1 = document.createElement("div");
                 // Add li element to div
-                
+
                 const liElement1 = document.createElement("li");
                 liElement1.textContent = `${item1.symbol}`;
                 outerDiv1.appendChild(liElement1);
@@ -1078,7 +1088,7 @@ const HeaderInfo = () => {
     function displaySlider(token){
         const sliderDiv = document.getElementById("slider_" + token.symbol);
         sliderDiv.style.display = "grid";
-        
+
         const sliderHeader = document.getElementById('values_container_header');
         const sliderEmptyText = document.getElementById('values_container_empty');
         sliderHeader.style.display = "grid";
@@ -1097,7 +1107,7 @@ const HeaderInfo = () => {
         // Reset token threshold
         const tokenThreshold = document.getElementById("threshold_input_"+token.symbol);
         tokenThreshold.value = token.reserveLiquidationThreshold/100;
-        
+
         // Remove labels if no remaining sliders
         var remainingSliders = false;
         for(const key in tokenData){
@@ -1122,7 +1132,7 @@ const HeaderInfo = () => {
         const sliderEmptyText = document.getElementById('values_container_empty');
         sliderHeader.style.display = "none";
         sliderEmptyText.style.display = "block";
-        
+
         const sliderList = document.getElementById("values_container_list");
         sliderList.innerHTML = "";
         for(const key in tokenData){
@@ -1160,8 +1170,8 @@ const HeaderInfo = () => {
             const priceChangeElement = document.createElement("p");
             priceChangeElement.textContent = "(+0)";
             priceChangeElement.id = 'slider_outer_top_priceChange_' + token.symbol;
-            
-            
+
+
             // Create value slider and add to sliderOuterDiv
             const valueInputElement = document.createElement("input");
             valueInputElement.type = "range";
@@ -1194,13 +1204,13 @@ const HeaderInfo = () => {
             sliderTopDiv.appendChild(priceElement);
             sliderTopDiv.appendChild(percentageElement);
             sliderTopDiv.appendChild(priceChangeElement);
-            
+
             sliderOuterDiv.appendChild(sliderTopDiv);
             sliderOuterDiv.appendChild(valueInputElement);
             sliderOuterDiv.appendChild(sliderBottomDiv);
 
             outerDiv.appendChild(sliderOuterDiv);
-            
+
             const thresholdInputElement = document.createElement("input");
             thresholdInputElement.type = "number";
             thresholdInputElement.min = 0;
@@ -1210,19 +1220,19 @@ const HeaderInfo = () => {
             thresholdInputElement.addEventListener("input", calculateCurrentHealthValue);
             thresholdInputElement.id = "threshold_input_"+token.symbol;
             thresholdInputElement.classList.add("threshold_input");
-            
+
             outerDiv.appendChild(thresholdInputElement);
 
-            // Finally add the outer div element to the sliderList 
+            // Finally add the outer div element to the sliderList
             sliderList.appendChild(outerDiv);
         }
-       
+
     }
 
     // Calculate the Value of a borrow/supply, and update the display
     function calculateTokenValue(tokenID, caller){
 
-        // Get the price from the slider input 
+        // Get the price from the slider input
         const price = document.getElementById("slider_input_"+tokenID).value;
         // Update supply side
         if(caller == 0){
@@ -1241,10 +1251,10 @@ const HeaderInfo = () => {
             //valueElement.textContent = amount*price;
         }
 
-        
+
         else if (caller == 2){
             // Caller is from slider. Potentially update both sides.
-            // First check the supply/borrow divs exist first 
+            // First check the supply/borrow divs exist first
             const supplyDiv= document.getElementById("supply_input_"+tokenID);
             if(supplyDiv){
                 const valueElement = document.getElementById("supply_value_"+tokenID);
@@ -1270,24 +1280,24 @@ const HeaderInfo = () => {
         if(caller == 0){
             const priceElement = document.getElementById("supply_price_"+tokenID);
             priceElement.value = price;
-            
+
         }
         else if (caller == 1){
             const priceElement = document.getElementById("borrow_price_"+tokenID);
             priceElement.value = price
-           
+
         }
         else if (caller == 2){
-            
+
             const supplyDiv = document.getElementById("supply_price_"+tokenID);
             if(supplyDiv){
                 supplyDiv.value = price;
-                
+
             }
             const borrowDiv = document.getElementById("borrow_price_"+tokenID);
             if(borrowDiv){
                 borrowDiv.value = price;
-                
+
             }
 
         }
@@ -1317,7 +1327,7 @@ const HeaderInfo = () => {
             sliderPriceChange.textContent = "(-$" + Math.abs((price - currentTokenPrice)).toFixed(2) + ")";
             sliderPriceChange.style.color = "red";
         }
-        
+
     }
 
     // Change the price located in the sliders. Called by token supply and borrow divs
@@ -1331,7 +1341,7 @@ const HeaderInfo = () => {
         const sliderMaxValueText = document.getElementById('slider_div_top_max_'+tokenID);
         const sliderMaxValue = slider.max;
         var price;
-        
+
         if(isSupplySide){
             price = supply.value;
             const priceAsNum = parseFloat(price);
@@ -1346,12 +1356,12 @@ const HeaderInfo = () => {
             // Change max price according to current price
             slider.max = price * 3;
             sliderMaxValueText.textContent = '$ ' + (price*3).toFixed(2);
-            // Change price values 
+            // Change price values
             sliderPrice.textContent = "$" + parseFloat(priceAsNum.toFixed(2)).toLocaleString();
             sliderPrice.value = price;
             slider.value = price;
 
-            // Change percent value    
+            // Change percent value
             if((price /currentTokenPrice) * 100 >= 100){
                 sliderPercent.textContent = "(+" + ((price /currentTokenPrice) * 100).toFixed(2) + "%)" ;
                 sliderPercent.style.color = "green";
@@ -1381,7 +1391,7 @@ const HeaderInfo = () => {
                 supply.value = price;
                 //supply.textContent = parseFloat(priceAsNum.toFixed(2)).toLocaleString();
             }
-            
+
             // Change max price according to current price
             slider.max = price * 3;
             sliderMaxValueText.textContent = '$ ' + (price*3).toFixed(2);
@@ -1414,20 +1424,22 @@ const HeaderInfo = () => {
     }
 
     function displayTotalSuppliedOrBorrowed(){
-        // Calculate and update total value supplied 
+        // Calculate and update total value supplied
         var supplySum = 0;
         for(const index in tokenData){
             const token = tokenData[index];
             const supplyOuterDiv = document.getElementById("supply_outer_div_" + token.symbol);
             if(supplyOuterDiv && supplyOuterDiv.style.display == "grid"){
+                console.log(token);
                 const supplyValue = document.getElementById("supply_value_" + token.symbol);
                 supplySum += supplyValue.value;
             }
         }
+        console.log(supplySum, tokenData);
         const totalSupplyDiv = document.getElementById("info_container_bottom_totalSupplied");
         totalSupplyDiv.textContent = parseFloat(supplySum.toFixed(2)).toLocaleString();
 
-        // Calculate and update total value borrowed 
+        // Calculate and update total value borrowed
         var borrowSum = 0;
         for(const index in tokenData){
             const token = tokenData[index];
@@ -1435,12 +1447,12 @@ const HeaderInfo = () => {
             if(borrowOuterDiv && borrowOuterDiv.style.display == "grid"){
                 const borrowValue = document.getElementById("borrow_value_" + token.symbol);
                 borrowSum += borrowValue.value;
-                
+
             }
         }
         const totalBorrowDiv = document.getElementById("info_container_bottom_totalBorrowed");
         totalBorrowDiv.textContent = parseFloat(borrowSum.toFixed(2)).toLocaleString();
-    
+
         // Calculate and update Loan-to-Value ratio (Total Supplied / Total borrowed)
         const ltvDiv = document.getElementById("info_container_bottom_ltv");
         const ltvPercent = borrowSum/supplySum;
@@ -1454,7 +1466,7 @@ const HeaderInfo = () => {
             ltvDiv.textContent = (borrowSum/supplySum*100).toFixed(2);
         }
 
-        // Calculate and update Net Worth 
+        // Calculate and update Net Worth
         const netWorthDiv = document.getElementById("info_container_bottom_netWorth_value");
         netWorthDiv.textContent = parseFloat((supplySum - borrowSum).toFixed(2)).toLocaleString();
 
@@ -1465,7 +1477,7 @@ const HeaderInfo = () => {
         var denominator = 0;
         var totalBorrowValue = 0;
         // Calculate the Denominator: ∑ ( Collateral[ith] × LiquidationThreshold[ith] )
-        
+
         for(const index in tokenData){
             const token = tokenData[index];
             const supplyOuterDiv = document.getElementById("supply_outer_div_" + token.symbol);
@@ -1481,9 +1493,9 @@ const HeaderInfo = () => {
                 const currentPrice = document.getElementById("slider_input_"+token.symbol).value;
                 totalBorrowValue += (currentPrice * inputAmount)
             }
-            
+
         }
-        
+
         var healthFactor = (denominator/totalBorrowValue).toFixed(2);
         const healthFactorDiv = document.getElementById("info_container_bottom_healthFactorValue");
         if(isNaN(healthFactor)){
@@ -1493,7 +1505,7 @@ const HeaderInfo = () => {
             healthFactor = "∞";
         }
 
-        
+
         if(healthFactor <= 1.1){
             healthFactorDiv.style.color = "red";
         }
@@ -1503,7 +1515,7 @@ const HeaderInfo = () => {
         else{
             healthFactorDiv.style.color = "green";
         }
-    
+
         setHealthFactor(healthFactor);
     }
 
@@ -1537,7 +1549,7 @@ const HeaderInfo = () => {
             }
             const displaySlider = document.getElementById("slider_" + token.symbol);
             const borrowOuterDiv = document.getElementById("borrow_outer_div_" + token.symbol);
-            
+
             if(displaySlider && borrowOuterDiv && borrowOuterDiv.style.display == "none"){
                 displaySlider.style.display = "none";
 
@@ -1593,7 +1605,7 @@ const HeaderInfo = () => {
             }
             const displaySlider = document.getElementById("slider_" + token.symbol);
             const supplyOuterDiv = document.getElementById("supply_outer_div_" + token.symbol);
-            
+
             if(displaySlider && (!supplyOuterDiv || supplyOuterDiv.style.display == "none")){
                 displaySlider.style.display = "none";
 
@@ -1629,7 +1641,7 @@ const HeaderInfo = () => {
             sliderEmptyText.style.display = "block";
         }
     }
-    
+
     useEffect(() => {
         // Display or hide net worth, health factor, and ltv textboxs
         const netWorthInfoIcon = document.getElementById("info_container_top_netWorth_icon");
@@ -1638,11 +1650,11 @@ const HeaderInfo = () => {
         const healthFactorTextBox = document.getElementById("healthFactor_textbox");
         const ltvInfoIcon = document.getElementById("info_container_top_icon_ltv_icon");
         const ltvTextBox = document.getElementById("ltv_textbox");
-    
+
         netWorthInfoIcon.addEventListener("click", () => {
             netWorthTextBox.style.opacity = "1";
             netWorthTextBox.style.visibility = "visible";
-            
+
         });
         healthFactorInfoIcon.addEventListener("click", () => {
             healthFactorTextBox.style.opacity = "1";
@@ -1651,14 +1663,14 @@ const HeaderInfo = () => {
         ltvInfoIcon.addEventListener("click", () => {
             ltvTextBox.style.opacity = "1";
             ltvTextBox.style.visibility = "visible"
-           
+
         });
-    
+
         document.addEventListener("click", (event) => {
         if (!netWorthInfoIcon.contains(event.target) && !netWorthTextBox.contains(event.target)) {
             netWorthTextBox.style.opacity = "0";
             netWorthTextBox.style.visibility = "hidden";
-           
+
         }
         if (!healthFactorInfoIcon.contains(event.target) && !healthFactorTextBox.contains(event.target)) {
             healthFactorTextBox.style.opacity = "0";
@@ -1669,7 +1681,7 @@ const HeaderInfo = () => {
             ltvTextBox.style.visibility = "hidden";
         }
     });
-        
+
 
 
         getMissingPrices();
@@ -1685,7 +1697,7 @@ const HeaderInfo = () => {
             const infoContainer = document.getElementById("info_container_top");
             const supplyModal = document.getElementById("modal_supply_content");
             const borrowModal = document.getElementById("modal_borrow_content");
-            
+
             const supplyDivWidth = document.getElementById("assets_supply").offsetWidth;
             const borrowDivWidth = document.getElementById("assets_borrow").offsetWidth;
             const sliderDiv = document.getElementById("values_container");
@@ -1716,18 +1728,18 @@ const HeaderInfo = () => {
                 borrowDiv.style.width = "40%";
                 supplyDiv.style.width = "40%";
                 supplyDiv.style.marginRight = "15px";
-                
+
                 sliderDiv.style.paddingRight = "10px";
                 sliderDiv.style.paddingLeft = "10px";
-                
+
                 supplyDiv.style.display = "block";
                 borrowDiv.style.display = "block";
                 infoContainerOuter.style.display = "block";
-                
+
                 sliderDiv.style.width = `${supplyDivWidth + borrowDivWidth -7}px`;
-                
+
             }
-            
+
             if(screenWidth < mobileThreshold){
                 // Change the info container grid layout
                 infoContainer.style.gridTemplateColumns = 'repeat(1, 1fr)';
@@ -1754,7 +1766,7 @@ const HeaderInfo = () => {
         const borrowButton = document.getElementById('borrow_button');
         const supplyDiv = document.getElementById("assets_supply");
         const borrowDiv = document.getElementById("assets_borrow");
-        
+
         supplyButton.addEventListener('click', () => {
             supplyButton.classList.add('active');
             borrowButton.classList.remove('active');
@@ -1786,14 +1798,14 @@ const HeaderInfo = () => {
 
 
 
-    return ( 
+    return (
         <div className='headerInfo'>
             <div className={`modal_supply ${modalSupplyVisible ? 'visible' : ''}`} id="modal_supply">
 
                 <div className = "modal_supply_content" id = "modal_supply_content">
                     <div className="modal_supply_content_header">
                         <p>Assets to Supply</p>
-                        <button className = "modal_supply_content_header_btn" onClick={clearSupplySide}>Clear Supply</button>                 
+                        <button className = "modal_supply_content_header_btn" onClick={clearSupplySide}>Clear Supply</button>
                     </div>
 
                     <div className="modal_supply_content_assets">
@@ -1810,7 +1822,7 @@ const HeaderInfo = () => {
                                     <button className = "modal_supply_content_assets_bottom_btn" onClick={setSupplyModalVisibilityFalse}>Confirm</button>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
 
@@ -1848,7 +1860,7 @@ const HeaderInfo = () => {
             <div className = "drop">
                 <div className="dropdown">
                     <div className = "dropdown_text">
-                        <div className = "dropdown_icon" id="dropdown_icon">{iconComponents[chain]}</div>       
+                        <div className = "dropdown_icon" id="dropdown_icon">{iconComponents[chain]}</div>
                         <div onClick={showDropDown} className="dropdown_btn">{chain} Market</div>
                         <div className="dropdown_version" >
                             <p className="dropdown_version_text" id = "dropdown_version_text"  >{aaveVersion} </p>
@@ -1885,7 +1897,7 @@ const HeaderInfo = () => {
                         </button>
                     </div>
                 </div>
-                
+
             </div>
 
 
@@ -1893,7 +1905,7 @@ const HeaderInfo = () => {
                 <div className="loading_circle" id="loading_circle"></div>
                 <p className = "loading_text" id = "loading_text">Loading Token Data...</p>
             </div>
-     
+
             <div className = "search">
                 <div className = "search_div">
                     <input id = "search_div_input" className = "search_div_input" placeholder = "Search by Address"></input>
@@ -1903,21 +1915,21 @@ const HeaderInfo = () => {
                 </div>
             </div>
 
-   
+
 
             <div className ="b_s">
                 <div className='info'>
                     <div className = "info_container" id='info_container'>
-                        <div className = "info_container_outer" id = "info_container_outer"> 
-                            <div className = "info_container_top" id="info_container_top"> 
+                        <div className = "info_container_outer" id = "info_container_outer">
+                            <div className = "info_container_top" id="info_container_top">
 
                                 <div className = "info_container_top_div">
-                                    <p className = "info_container_top_netWorth">Net Worth</p> 
+                                    <p className = "info_container_top_netWorth">Net Worth</p>
                                     <div className = "info_container_top_iconDiv">
                                         <InfoIcon className = "info_container_top_netWorth_icon" id ="info_container_top_netWorth_icon"></InfoIcon>
-                                    </div>  
+                                    </div>
                                     <div className="textbox" id="netWorth_textbox">Value supplied minus value borrowed.</div>
-                                </div>   
+                                </div>
                                 <div className = "info_container_bottom_netWorth">
                                     <div className='info_container_bottom_netWorth_symbol'>$</div>
                                     <div className="info_container_bottom_netWorth_value" id = "info_container_bottom_netWorth_value">0.00</div>
@@ -1929,10 +1941,10 @@ const HeaderInfo = () => {
                                     <div className = "info_container_top_iconDiv">
                                         <InfoIcon className = "info_container_top_icon_healthFactor_icon" id = "info_container_top_icon_healthFactor_icon"></InfoIcon>
                                     </div>
-                                    <div className="textbox" id="healthFactor_textbox">A numeric representation of the safety of your deposited assets against the borrowed assets and its underlying value. The higher the value is, the safer the state of your funds are against liquidation. If the health factor reaches 1, the liquidation of your deposits will be triggered.</div>   
+                                    <div className="textbox" id="healthFactor_textbox">A numeric representation of the safety of your deposited assets against the borrowed assets and its underlying value. The higher the value is, the safer the state of your funds are against liquidation. If the health factor reaches 1, the liquidation of your deposits will be triggered.</div>
                                 </div>
                                 <div className = "info_container_bottom_healthFactorValue" id = "info_container_bottom_healthFactorValue">{healthFactor}</div>
-                                
+
 
                                 <div className = "info_container_top_div">
                                     <p className='info_container_top_ltv'>Loan-to-Value Ratio</p>
@@ -1940,16 +1952,16 @@ const HeaderInfo = () => {
                                         <InfoIcon className = "info_container_top_icon_ltv_icon" id = "info_container_top_icon_ltv_icon"></InfoIcon>
                                     </div>
                                     <div className="textbox" id="ltv_textbox">The Loan to Value (”LTV”) ratio defines the maximum amount of assets that can be borrowed with a specific collateral. It is expressed as a percentage (e.g., at LTV=75%, for every 1 ETH worth of collateral, borrowers will be able to borrow 0.75 ETH worth of the corresponding currency).</div>
-                                </div>  
+                                </div>
 
                                 <div>
-                                    <div className="info_container_bottom_ltv" id = "info_container_bottom_ltv">0.00</div> 
-                                    <div className='info_container_bottom_ltv_symbol'>%</div>         
-                                </div>                                                    
+                                    <div className="info_container_bottom_ltv" id = "info_container_bottom_ltv">0.00</div>
+                                    <div className='info_container_bottom_ltv_symbol'>%</div>
+                                </div>
                             </div>
 
-                        </div>     
-                    </div>                         
+                        </div>
+                    </div>
                 </div>
                 <div className = "switchSupplyAndBorrow" id = "switchSupplyAndBorrow">
                     <div className="switchSupplyAndBorrow_container" id ="switchSupplyAndBorrow_container">
@@ -1968,17 +1980,17 @@ const HeaderInfo = () => {
                         <div className = "assets_supply_top">
                             <p className = "assets_supply_top_header">Supplies</p>
                             <button className = "b_s_container_supply_btn" id = "b_s_container_supply_btn" onClick = {setSupplyModalVisibilityTrue}>Supply</button>
-                        
+
                         </div>
                         <p className = "assets_supply_nothing" id = "assets_supply_nothing">Nothing supplied yet</p>
                         <div className = "assets_supply_info">
                             <div className = "assets_supply_info_box" id = "assets_supply_info_box">
                                 <div className='assets_supply_info_box_left' id ="assets_supply_info_box_left">
-                                    <p>Total Supplied $</p>   
-                                    <div className="info_container_bottom_totalSupplied" id ="info_container_bottom_totalSupplied">0.00</div> 
+                                    <p>Total Supplied $</p>
+                                    <div className="info_container_bottom_totalSupplied" id ="info_container_bottom_totalSupplied">0.00</div>
                                 </div>
                             </div>
-                        </div>    
+                        </div>
                         <div className = "assets_supply_header" id ="assets_supply_header">
                             <h3>Asset</h3>
                             <h3>Amount</h3>
@@ -1989,9 +2001,9 @@ const HeaderInfo = () => {
                         <div className="assets_supply_tokens">
                             <ul id = "assets_supply_tokens_list" className = "assets_supply_tokens_list"></ul>
                         </div>
-                        
+
                     </div>
-                    
+
                     <div className = "assets_borrow" id="assets_borrow">
                         <div className = "assets_borrow_top">
                             <p className = "assets_borrow_top_header">Borrows</p>
@@ -2001,13 +2013,13 @@ const HeaderInfo = () => {
                         <div className = "assets_borrow_info" id = "assets_borrow_info">
                             <div className = "assets_borrow_info_box_left" id = "assets_borrow_info_box_left" >
                                 <div className = "assets_borrow_info_box_left_inner" >
-                                    <p>Total Borrowed $</p>  
+                                    <p>Total Borrowed $</p>
                                     <div className="info_container_bottom_totalBorrowed" id = "info_container_bottom_totalBorrowed">0.00</div>
                                 </div>
-                            </div> 
+                            </div>
                         </div>
-               
-                       
+
+
                         <div className = "assets_borrow_header" id = "assets_borrow_header">
                             <h3>Asset</h3>
                             <h3>Amount</h3>
@@ -2031,17 +2043,17 @@ const HeaderInfo = () => {
                             <h3>Liquidation Threshold %</h3>
                         </div>
                         <ul id = "values_container_list" className = "values_container_list"></ul>
-                    
+
                     </div>
                 </div>
-            
+
                 <div className="error-container" id="errorContainer"></div>
-           
+
             </div>
-            
+
         </div>
-        
+
      );
 }
- 
+
 export default HeaderInfo;
